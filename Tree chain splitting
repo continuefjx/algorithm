@@ -1,0 +1,247 @@
+//测试链接：https://www.luogu.com.cn/problem/P3384
+#include<iostream>
+#include<stack>
+#include <bits/stdc++.h>
+#include<string.h>
+
+
+using namespace std; 
+#define endl "\n"
+typedef  long long ll;
+const int N=1e5+5;
+ll p;
+int h[N],nex[N*2],to[N*2],id[N];
+int n,r,cnt=1,m,cot=1;
+int fa[2*N],sz[2*N],son[2*N];
+int top[N];
+ll sum[4*N];
+int lz[4*N],fan[2*N],deep[2*N];
+int val[N];
+void add(int a,int b)
+{
+	nex[cnt]=h[a];
+	to[cnt]=b;
+	h[a]=cnt++;
+}
+void dfs0(int u,int f)
+{
+	fa[u]=f;
+	deep[u]=deep[f]+1;
+	sz[u]=1;
+	int zi=0;
+	for(int k=h[u];k;k=nex[k])
+	{
+		int v=to[k];
+		if(v==f) continue;
+		dfs0(v,u);
+		sz[u]+=sz[v];
+		if(sz[v]>zi)
+		{
+			zi=sz[v];son[u]=v;
+		}
+	}
+}
+void dfs1(int u,int f)
+{
+//	cout<<u<<" "<<f<<endl;
+//	system("pause");
+	id[u]=cot;
+	fan[cot]=u;
+	cot++;
+	top[u]=f;
+	if(!son[u]) return ;
+	dfs1(son[u],f);
+	for(int k=h[u];k;k=nex[k])
+	{
+		int v=to[k];
+		if(v==fa[u]||v==son[u]) continue;
+		dfs1(v,v);
+	}
+}
+void build(int i,int l,int r)
+{
+	if(l==r)
+	{
+		sum[i]=val[fan[l]]%p;
+	//	cout<<l<<" "<<r<<" = "<<sum[i]<<endl;
+		return ;
+	}
+	int m=l+(r-l)/2;
+	build(i<<1,l,m);
+	build(i<<1|1,m+1,r);
+	sum[i]=sum[i<<1]+sum[i<<1|1];
+	sum[i]=sum[i]%p;
+//	cout<<l<<" "<<r<<" = "<<sum[i]<<endl;
+}
+void lazy(int i,int jv,int num)
+{
+	sum[i]+=(ll)jv*num;
+	sum[i]=sum[i]%p;
+	lz[i]+=jv;
+}
+void down(int i,int ln,int rn)
+{
+	if(lz[i])
+	{
+		lazy(i<<1,lz[i],ln);
+		lazy(i<<1|1,lz[i],rn);
+		lz[i]=0;
+	}
+}
+void jia(int i,int jl,int jr,int jv,int l,int r)
+{
+	if(jl>=l&&jr<=r)
+	{
+		lazy(i,jv,jr+1-jl);
+		return ;
+	}
+	int m=jl+(jr-jl)/2;
+	down(i,m+1-jl,jr-m);
+	if(l<=m) jia(i<<1,jl,m,jv,l,r);
+	if(r>m) jia(i<<1|1,m+1,jr,jv,l,r);
+	sum[i]=(sum[i<<1]+sum[i<<1|1])%p;
+}
+ll query(int i,int jl,int jr,int l,int r)
+{
+///	cout<<" job "<<i<<" "<<jl<<" "<<jr<<endl;
+	if(jl>=l&&jr<=r||jl==jr)
+	{
+		return sum[i];
+	}
+	
+	
+	int m=jl+(jr-jl)/2;
+	down(i,m+1-jl,jr-m);
+	ll ans=0;
+	if(m>=l) ans+=query(i<<1,jl,m,l,r)%p;
+	if(r>m) ans+=query(i<<1|1,m+1,jr,l,r)%p;
+	return ans%p;
+}
+void swap(int &a,int &b)
+{
+	int t=a;
+	a=b;
+	b=t;
+}
+ll find(int x,int y)
+{
+	int tx=top[x],ty=top[y];
+	ll ans=0;
+	while(tx!=ty)
+	{
+		if(deep[tx]<=deep[ty])
+		{
+			swap(x,y);swap(tx,ty);
+			
+		}	
+		ans+=query(1,1,n,id[tx],id[x])%p;
+		x=fa[tx];
+		tx=top[x],ty=top[y];	
+	}
+	if(deep[x]>=deep[y]) swap(x,y);
+	ans+=query(1,1,n,id[x],id[y])%p;
+	ans=ans%p;
+	return ans;
+}
+void addxy(int x,int y,int z)
+{
+//	cout<<" addxy "<<x<<" "<<y<<endl;
+	int tx=top[x],ty=top[y];
+	while(tx!=ty)
+	{
+		if(deep[tx]<=deep[ty]) 
+		{
+			swap(x,y),swap(tx,ty);
+		}
+		jia(1,1,n,z,id[tx],id[x]);
+		x=fa[tx];
+		tx=top[x],ty=top[y];
+	//	cout<<x<<" "<<y<<endl;
+	}
+	if(deep[x]>=deep[y]) swap(x,y);
+//	cout<<" addxy "<<x<<" "<<y<<endl;
+	jia(1,1,n,z,id[x],id[y]);
+}
+void add1(int x,int z)
+{
+	jia(1,1,n,z,id[x],id[x]+sz[x]-1);
+	
+}
+ll find1(int x)
+{
+	//cout<<" begin "<<x<<" "<<id[x]<<endl;
+	return query(1,1,n,id[x],id[x]+sz[x]-1);
+}
+ inline void chu()
+{
+//	cout<<"zhi"<<endl;
+	for(int i=1;i<=n;i++)
+	{
+		ll ans=query(1,1,n,id[i],id[i]);
+	//	cout<<i<<" "<<ans<<endl;
+	}
+	cout<<endl;
+}
+int main()
+{
+//	int aa=1,bb=2;swap(aa,bb);cout<<aa<<" "<<bb<<endl;
+	ios::sync_with_stdio(0),cin.tie(0),cout.tie(0);
+	cin>>n>>m>>r>>p;
+	memset(h,0,sizeof(h)),memset(nex,0,sizeof(nex)),memset(to,0,sizeof(to));
+	for(int i=1;i<=n;i++)
+	{
+		cin>>val[i];
+	}
+	for(int i=1;i<n;i++)
+	{
+		int  u,v;cin>>u>>v;
+		add(u,v),add(v,u);
+	}
+
+	dfs0(r,0);
+//	cout<<"0over"<<endl;
+	dfs1(r,r);
+//	for(int i=1;i<=n;i++)
+//	{
+//		cout<<i<<" 上级： "<<top[i]<<endl;
+//	}
+//	cout<<"dfs over"<<endl;
+//	cout<<"id"<<endl;
+//	for(int i=1;i<=n;i++)
+//	{
+//		cout<<i<<" "<<id[i]<<endl;
+//	}
+//	cout<<"id over"<<endl;
+//	chu();
+//	cout<<"over"<<endl;
+	build(1,1,n);
+	for(int i=0;i<m;i++)
+	{
+	//	chu();
+		int a;cin>>a;
+		if(a==1)
+		{
+			int x,y,z;cin>>x>>y>>z;
+			addxy(x,y,z);
+		}
+		else if(a==2)
+		{
+			int x,y;cin>>x>>y;
+			ll ans=find(x,y);
+			cout<<ans<<endl;
+		}
+		else if(a==3)
+		{
+			int x,z;cin>>x>>z;
+			add1(x,z);
+		}
+		else
+		{
+			int x;cin>>x;
+			ll ans=find1(x);
+			cout<<ans<<endl;
+		}
+	}
+	
+	return 0;
+}
