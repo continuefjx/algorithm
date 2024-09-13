@@ -1,0 +1,137 @@
+//树分治-点分治 把一棵树划分为以重心为根的树，在计算其他点到根的距离，在不断分治下去
+//链接：https://www.luogu.com.cn/problem/P3806
+#include <bits/stdc++.h>
+using namespace std;
+const int N=4e4+4;
+int h[N],to[N*2],nex[N*2],cnt=0,w[N*2];
+int del[N],sz[N];
+int tot=0,dis[N],d[N];
+int root,sum,mxs;
+//int maxs[N];
+const int inf=1e7+1;
+int judge[inf],ans[105];
+int ask[105],q[N*2];
+int n,m;
+void add(int u,int v,int wei)
+{
+	nex[++cnt]=h[u];
+	to[cnt]=v;
+	w[cnt]=wei;
+	h[u]=cnt;
+}
+void getsz(int u,int f)
+{
+	sz[u]=1;
+	for(int k=h[u];k;k=nex[k])
+	{
+		int v=to[k];
+		if(v==f||del[v]) continue;
+		getsz(v,u);
+		sz[u]+=sz[v];
+	}
+}
+void getroot(int u,int f)
+{
+	sz[u]=1;
+	int s=0;
+	for(int k=h[u];k;k=nex[k])
+	{
+		int v=to[k];
+		if(del[v]||v==f) continue;
+		getroot(v,u);
+		sz[u]+=sz[v];
+		s=max(s,sz[v]);
+	}
+	s=max(s,sum-sz[u]);
+	if(s<mxs)
+	{
+		root=u;
+		mxs=s;
+	}
+}
+void getdis(int u,int f)
+{
+	dis[++tot]=d[u];
+	for(int k=h[u];k;k=nex[k])
+	{
+		int v=to[k];
+		if(v==f||del[v]) continue;
+		d[v]=d[u]+w[k];
+		getdis(v,u);
+	}
+}
+void calc(int u)
+{
+//	del[u]=judge[0]=1;
+	//tot=0;
+	int p=0;
+	for(int k=h[u];k;k=nex[k])
+	{
+		int v=to[k];
+		if(del[v]) continue;
+		tot=0;
+		d[v]=w[k];
+		getdis(v,u);
+		
+		for(int i=1;i<=tot;i++)
+		{
+			for(int j=1;j<=m;j++)
+			{
+				if(ask[j]>=dis[i])
+				{
+					ans[j]|=judge[ask[j]-dis[i]];
+				}
+			}
+		}
+		
+		for(int i=1;i<=tot;i++)
+		{
+			if(dis[i]<inf)
+			{
+				q[p++]=dis[i],judge[dis[i]]=1;
+			}
+		}
+	}
+	for(int i=0;i<p;i++)
+		{
+			judge[q[i]]=0;
+		}
+	
+}
+void divide(int u)
+{
+	del[u]=1;
+	judge[0]=1;
+	calc(u);
+	for(int k=h[u];k;k=nex[k])
+	{
+		int v=to[k];
+		if(del[v]) continue;
+		mxs=sum=sz[v],root=0;
+		getroot(v,u);
+		divide(root);
+	}
+}
+int main()
+{
+	cin>>n>>m;
+	for(int i=1;i<n;i++)
+	{
+		int u,v,w;cin>>u>>v>>w;
+		add(u,v,w),add(v,u,w);
+	}
+	for(int i=1;i<=m;i++)
+	{
+		cin>>ask[i];
+	}
+	sum=n,mxs=n,root=0;
+	getroot(1,0);
+	//getsz(root,0);
+	divide(root);
+	for(int i=1;i<=m;i++)
+	{
+		if(ans[i]) cout<<"AYE"<<endl;
+		else cout<<"NAY"<<endl;
+	}
+	return 0;
+}
